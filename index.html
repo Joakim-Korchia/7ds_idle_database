@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7DS Idle - Base de données des Champions</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            cursor: pointer;
+        }
+
+        th:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Couleurs pour les raretés */
+        .legendaire { 
+            background-color: #FFD70010; /* Réduction de l'opacité du fond à 10% */
+            color: #DAA520; /* Utilisation d'un doré plus doux (goldenrod) */
+            font-weight: bold;
+            text-shadow: 0px 0px 1px rgba(218,165,32,0.3); /* Ajout d'un léger halo */
+        }
+        .unique { 
+            background-color: #D2691E20; 
+            color: #D2691E;
+            font-weight: bold;
+        }
+        .epique { 
+            background-color: #80008020; 
+            color: #800080;
+            font-weight: bold;
+        }
+        .rare { 
+            background-color: #0000FF20; 
+            color: #0000FF;
+            font-weight: bold;
+        }
+        .normal { 
+            background-color: #00800020; 
+            color: #008000;
+            font-weight: bold;
+        }
+
+        /* Couleurs pour les attributs */
+        .FOR { 
+            color: #FF3333; 
+            font-weight: bold;
+            text-shadow: 0px 0px 1px rgba(0,0,0,0.2);
+        }
+        .VIT { 
+            color: #33CC33; 
+            font-weight: bold;
+            text-shadow: 0px 0px 1px rgba(0,0,0,0.2);
+        }
+        .DEX { 
+            color: #66B2FF; 
+            font-weight: bold;
+            text-shadow: 0px 0px 1px rgba(0,0,0,0.2);
+        }
+        .INT { 
+            color: #FFD700; 
+            font-weight: bold;
+            text-shadow: 0px 0px 1px rgba(0,0,0,0.2);
+        }
+
+        /* Effets de survol pour les attributs */
+        td[class^="FOR"], td[class^="VIT"], td[class^="DEX"], td[class^="INT"] {
+            position: relative;
+        }
+
+        td[class^="FOR"]:hover, td[class^="VIT"]:hover, td[class^="DEX"]:hover, td[class^="INT"]:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>7DS Idle - Champions Database</h1>
+        
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Rechercher un champion...">
+            <select id="rarityFilter">
+                <option value="">Toutes les raretés</option>
+                <option value="legendaire">Légendaire</option>
+                <option value="unique">Unique</option>
+                <option value="epique">Épique</option>
+                <option value="rare">Rare</option>
+                <option value="normal">Normal</option>
+            </select>
+            <select id="attributeFilter">
+                <option value="">Tous les attributs</option>
+                <option value="FOR">Force</option>
+                <option value="VIT">Vitesse</option>
+                <option value="DEX">Dextérité</option>
+                <option value="INT">Intelligence</option>
+            </select>
+            <select id="debuffFilter">
+                <option value="">Tous les malus</option>
+                <!-- sera rempli dynamiquement -->
+            </select>
+        </div>
+
+        <table id="championsTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Champion</th>
+                    <th onclick="sortTable(1)">Rareté</th>
+                    <th onclick="sortTable(2)">Attribut</th>
+                    <th onclick="sortTable(3)">Malus Principal</th>
+                    <th onclick="sortTable(4)">Description</th>
+                    <th onclick="sortTable(5)">Malus Secondaire</th>
+                    <th onclick="sortTable(6)">Description</th>
+                </tr>
+            </thead>
+            <tbody id="championsBody">
+                <!-- sera rempli dynamiquement -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Données des champions
+        const champions = [
+    {
+        name: "Ban",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Détournement",
+        secondaryDebuffDesc: "Réduit l'attaque finale"
+    },
+    {
+        name: "Escanor",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Gowther",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "King",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Dolor",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Infection",
+        secondaryDebuffDesc: "Impossible de récupérer des PV"
+    },
+    {
+        name: "Merlin",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Gloxinia",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "Puissance",
+        mainDebuffDesc: "Réduit la défense crit",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Monspiet",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Flambée infernale",
+        secondaryDebuffDesc: "Réduit la défense crit et la résistance crit"
+    },
+    {
+        name: "Diane géante",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Pétrification",
+        secondaryDebuffDesc: "Impossible de se déplacer et d'attaquer + réduit résistance crit"
+    },
+    {
+        name: "Estarossa",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Meliodas lost vayne",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Hendrickson",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Acide",
+        secondaryDebuffDesc: "Réduit la défense finale + dégats sur le temps"
+    },
+    {
+        name: "Démon Hendrickson",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "Aveuglement",
+        mainDebuffDesc: "Réduit la précision finale",
+        secondaryDebuff: "Infection",
+        secondaryDebuffDesc: "Impossible de récupérer des PV"
+    },
+    {
+        name: "Zaratras",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Arthur",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Destruction",
+        secondaryDebuffDesc: "Réduit la défense finale"
+    },
+    {
+        name: "Guila",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "Destruction",
+        mainDebuffDesc: "Réduit la défense finale",
+        secondaryDebuff: "Inflammation",
+        secondaryDebuffDesc: "Réduit la résistance crit + dégats sur le temps"
+    },
+    {
+        name: "Gilthunder",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "Electrocution",
+        mainDebuffDesc: "Réduit la vitesse d'attaque + dégats sur le temps",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Galan",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Matrona",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Derrierie",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Zaneli",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Gray road",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "Résistance réduite",
+        mainDebuffDesc: "Réduit la résistance crit",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Griamor",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Gelda",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Hauser",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Ellatte",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Elaine",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "Résistance réduite",
+        mainDebuffDesc: "Réduit la résistance crit",
+        secondaryDebuff: "Dispersion",
+        secondaryDebuffDesc: "Réduit les chances crit"
+    },
+    {
+        name: "Hendrickson",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "Saignement",
+        mainDebuffDesc: "Dégats sur le temps",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Diane",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Nanashi",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Jenna",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Denzel",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "Ralentissement",
+        mainDebuffDesc: "Réduit la vitesse d'attaque",
+        secondaryDebuff: "Affaiblissement",
+        secondaryDebuffDesc: "Réduit l'attaque finale"
+    },
+    {
+        name: "Hellbram",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "Esquive réduite",
+        mainDebuffDesc: "Réduit l'esquive finale",
+        secondaryDebuff: "Pétrification",
+        secondaryDebuffDesc: "Impossible de se déplacer et d'attaquer + réduit résistance crit"
+    },
+    {
+        name: "Dreyfus",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "Aveuglement",
+        mainDebuffDesc: "Réduit la précision finale",
+        secondaryDebuff: "Résistance réduite",
+        secondaryDebuffDesc: "Réduit la résistance crit"
+    },
+    {
+        name: "Merascylla",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Jericho",
+        rarity: "legendaire",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Liz",
+        rarity: "legendaire",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Fraudrin",
+        rarity: "legendaire",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Slader",
+        rarity: "legendaire",
+        attribute: "DEX",
+        mainDebuff: "Saignement",
+        mainDebuffDesc: "Dégats sur le temps",
+        secondaryDebuff: "Supra-Contrôle",
+        secondaryDebuffDesc: "Réduit la défense finale et les chances crit"
+    },
+    {
+        name: "Ren",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Infection",
+        secondaryDebuffDesc: "Impossible de récupérer des PV"
+    },
+    {
+        name: "Viviane",
+        rarity: "unique",
+        attribute: "FOR",
+        mainDebuff: "Étreinte",
+        mainDebuffDesc: "Impossible de se déplacer",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Ralentissement",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "Ralentissement",
+        mainDebuffDesc: "Réduit la vitesse d'attaque",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Wayeo",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Cain",
+        rarity: "unique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Mod",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "Destruction",
+        mainDebuffDesc: "Réduit la défense finale",
+        secondaryDebuff: "Acide",
+        secondaryDebuffDesc: "Réduit la défense finale + dégats sur le temps"
+    },
+    {
+        name: "Orlondi",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Arden",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Erosion",
+        secondaryDebuffDesc: "Réduit les dégats crit"
+    },
+    {
+        name: "Dahaka",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Géante Dolores",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Aveuglement",
+        secondaryDebuffDesc: "Réduit la précision finale"
+    },
+    {
+        name: "Dogget",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Pump",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "Ralentissement",
+        mainDebuffDesc: "Réduit la vitesse d'attaque",
+        secondaryDebuff: "Saignement",
+        secondaryDebuffDesc: "Dégats sur le temps"
+    },
+    {
+        name: "Nerobasta",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Bellion",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Ganne",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Derocchio",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Acide",
+        secondaryDebuffDesc: "Réduit la défense finale + dégats sur le temps"
+    },
+    {
+        name: "Gara",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Ralentissement",
+        secondaryDebuffDesc: "Réduit la vitesse d'attaque"
+    },
+    {
+        name: "Izraf",
+        rarity: "unique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Deldry",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Atra",
+        rarity: "unique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Acide",
+        secondaryDebuffDesc: "Réduit la défense finale + dégats sur le temps"
+    },
+    {
+        name: "DeathPierce",
+        rarity: "unique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Gerharde",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Cardinale Hellbram",
+        rarity: "unique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Weinheidt",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Saignement",
+        secondaryDebuffDesc: "Dégats sur le temps"
+    },
+    {
+        name: "Jillian",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "Esquive réduite",
+        mainDebuffDesc: "Réduit l'esquive finale",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Gustav",
+        rarity: "unique",
+        attribute: "INT",
+        mainDebuff: "Ralentissement",
+        mainDebuffDesc: "Réduit la vitesse d'attaque",
+        secondaryDebuff: "Gel",
+        secondaryDebuffDesc: "Impossible de se déplacer et d'attaquer + réduit défense crit"
+    },
+    {
+        name: "Meliodas",
+        rarity: "unique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Marmas",
+        rarity: "epique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Aveuglement",
+        secondaryDebuffDesc: "Réduit la précision finale"
+    },
+    {
+        name: "Dale",
+        rarity: "epique",
+        attribute: "DEX",
+        mainDebuff: "Étourdissement",
+        mainDebuffDesc: "Empêche d'attaquer et de se déplacer",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Sorada",
+        rarity: "epique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Zoria",
+        rarity: "epique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Dumbelbas",
+        rarity: "epique",
+        attribute: "FOR",
+        mainDebuff: "Étourdissement",
+        mainDebuffDesc: "Empêche d'attaquer et de se déplacer",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Elizabeth",
+        rarity: "epique",
+        attribute: "INT",
+        mainDebuff: "Affaiblissement",
+        mainDebuffDesc: "Réduit l'attaque finale",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Theo",
+        rarity: "epique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Alioni",
+        rarity: "epique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Ruin",
+        rarity: "epique",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Golgius",
+        rarity: "epique",
+        attribute: "FOR",
+        mainDebuff: "Destruction",
+        mainDebuffDesc: "Réduit la défense finale",
+        secondaryDebuff: "Saignement",
+        secondaryDebuffDesc: "Dégats sur le temps"
+    },
+    {
+        name: "Hugo",
+        rarity: "epique",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Jude",
+        rarity: "epique",
+        attribute: "DEX",
+        mainDebuff: "Aveuglement",
+        mainDebuffDesc: "Réduit la précision finale",
+        secondaryDebuff: "Étourdissement",
+        secondaryDebuffDesc: "Empêche d'attaquer et de se déplacer"
+    },
+    {
+        name: "Simon",
+        rarity: "epique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Theo",
+        rarity: "epique",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Taizoo",
+        rarity: "epique",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Friesia",
+        rarity: "epique",
+        attribute: "VIT",
+        mainDebuff: "Puissance",
+        mainDebuffDesc: "Réduit la défense crit",
+        secondaryDebuff: "Acide",
+        secondaryDebuffDesc: "Réduit la défense finale + dégats sur le temps"
+    },
+    {
+        name: "Twigo",
+        rarity: "epique",
+        attribute: "FOR",
+        mainDebuff: "Esquive réduite",
+        mainDebuffDesc: "Réduit l'esquive finale",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Apprenti chevalier",
+        rarity: "rare",
+        attribute: "FOR",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Infection",
+        secondaryDebuffDesc: "Impossible de récupérer des PV"
+    },
+    {
+        name: "Rania",
+        rarity: "rare",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Cache cache espiègle",
+        rarity: "rare",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Silence",
+        secondaryDebuffDesc: "Impossible d'utiliser des compétences spe ou ult"
+    },
+    {
+        name: "Veilleur spirituel",
+        rarity: "rare",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étreinte",
+        secondaryDebuffDesc: "Impossible de se déplacer"
+    },
+    {
+        name: "Chevalier sacré offensif",
+        rarity: "rare",
+        attribute: "INT",
+        mainDebuff: "Saignement",
+        mainDebuffDesc: "Dégats sur le temps",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Golem de cristal",
+        rarity: "normal",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étourdissement",
+        secondaryDebuffDesc: "Empêche d'attaquer et de se déplacer"
+    },
+    {
+        name: "Golem de pierre",
+        rarity: "normal",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Étourdissement",
+        secondaryDebuffDesc: "Empêche d'attaquer et de se déplacer"
+    },
+    {
+        name: "Banshee errante",
+        rarity: "normal",
+        attribute: "INT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Aveuglement",
+        secondaryDebuffDesc: "Réduit la précision finale"
+    },
+    {
+        name: "Hurleur",
+        rarity: "normal",
+        attribute: "INT",
+        mainDebuff: "Affaiblissement",
+        mainDebuffDesc: "Réduit l'attaque finale",
+        secondaryDebuff: "",
+        secondaryDebuffDesc: ""
+    },
+    {
+        name: "Traqueur loup garou",
+        rarity: "normal",
+        attribute: "VIT",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Ralentissement",
+        secondaryDebuffDesc: "Réduit la vitesse d'attaque"
+    },
+    {
+        name: "Fou d'echecs",
+        rarity: "normal",
+        attribute: "VIT",
+        mainDebuff: "Silence",
+        mainDebuffDesc: "Impossible d'utiliser des compétences spe ou ult",
+        secondaryDebuff: "Résistance réduite",
+        secondaryDebuffDesc: "Réduit la résistance crit"
+    },
+    {
+        name: "Patrouilleur fée",
+        rarity: "normal",
+        attribute: "FOR",
+        mainDebuff: "Inflammation",
+        mainDebuffDesc: "Réduit la résistance crit + dégats sur le temps",
+        secondaryDebuff: "Puissance",
+        secondaryDebuffDesc: "Réduit la défense crit"
+    },
+    {
+        name: "Fragment moussu",
+        rarity: "normal",
+        attribute: "DEX",
+        mainDebuff: "",
+        mainDebuffDesc: "",
+        secondaryDebuff: "Infection",
+        secondaryDebuffDesc: "Impossible de récupérer des PV"
+    }
+];
+
+        // Fonction pour remplir le tableau
+        function populateTable(data) {
+            const tbody = document.getElementById('championsBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(champion => {
+                const row = document.createElement('tr');
+                row.classList.add(champion.rarity.toLowerCase());
+                row.innerHTML = `
+                    <td>${champion.name}</td>
+                    <td>${champion.rarity}</td>
+                    <td class="${champion.attribute}">${champion.attribute}</td>
+                    <td>${champion.mainDebuff}</td>
+                    <td>${champion.mainDebuffDesc}</td>
+                    <td>${champion.secondaryDebuff}</td>
+                    <td>${champion.secondaryDebuffDesc}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Fonction de tri
+        function sortTable(n) {
+            const table = document.getElementById('championsTable');
+            let rows, switching = true;
+            let i, x, y, shouldSwitch, dir = 'asc';
+            let switchcount = 0;
+
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+
+                for (i = 1; i < rows.length - 1; i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName('td')[n];
+                    y = rows[i + 1].getElementsByTagName('td')[n];
+
+                    if (dir === 'asc') {
+                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir === 'desc') {
+                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount === 0 && dir === 'asc') {
+                        dir = 'desc';
+                        switching = true;
+                    }
+                }
+            }
+        }
+
+        // Fonction de recherche et filtrage
+        function filterTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const rarityFilter = document.getElementById('rarityFilter').value;
+            const attributeFilter = document.getElementById('attributeFilter').value;
+            const debuffFilter = document.getElementById('debuffFilter').value;
+
+            const filteredData = champions.filter(champion => {
+                const matchesSearch = champion.name.toLowerCase().includes(searchText);
+                const matchesRarity = !rarityFilter || champion.rarity === rarityFilter;
+                const matchesAttribute = !attributeFilter || champion.attribute === attributeFilter;
+                const matchesDebuff = !debuffFilter || 
+                    champion.mainDebuff.toLowerCase() === debuffFilter.toLowerCase() || 
+                    champion.secondaryDebuff.toLowerCase() === debuffFilter.toLowerCase();
+
+                return matchesSearch && matchesRarity && matchesAttribute && matchesDebuff;
+            });
+
+            populateTable(filteredData);
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterTable);
+        document.getElementById('rarityFilter').addEventListener('change', filterTable);
+        document.getElementById('attributeFilter').addEventListener('change', filterTable);
+        document.getElementById('debuffFilter').addEventListener('change', filterTable);
+
+        // Remplir le select des malus
+        function populateDebuffSelect() {
+            const debuffs = new Set();
+            champions.forEach(champion => {
+                debuffs.add(champion.mainDebuff);
+                debuffs.add(champion.secondaryDebuff);
+            });
+
+            const select = document.getElementById('debuffFilter');
+            [...debuffs].sort().forEach(debuff => {
+                const option = document.createElement('option');
+                option.value = debuff.toLowerCase();
+                option.textContent = debuff;
+                select.appendChild(option);
+            });
+        }
+
+        // Initialisation
+        populateTable(champions);
+        populateDebuffSelect();
+    </script>
+</body>
+</html>
